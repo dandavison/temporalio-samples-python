@@ -1,16 +1,23 @@
 import asyncio
-from typing import NoReturn
+from datetime import timedelta
 
 import temporalio
 import temporalio.client
 import temporalio.exceptions
 from rich import print
-from temporalio import common, workflow
+from temporalio import activity, common, workflow
 from temporalio.client import Client, WorkflowUpdateStage
+from temporalio.common import RetryPolicy
 from temporalio.worker import Worker
 
 wid = __file__
 tq = "tq"
+
+
+@activity.defn
+async def my_activity():
+    print("in activity")
+    raise Exception("activity error")
 
 
 @workflow.defn
@@ -19,13 +26,24 @@ class Workflow:
     A workflow that is canceled while handlers are running.
     """
 
+    def __init__(self) -> None:
+        self.handler_in_progress = False
+
     @workflow.run
-    async def run(self) -> NoReturn:
-        await workflow.wait_condition(lambda: False)
+    async def run(self) -> str:
+        await workflow.wait_condition(lambda: self.handler_in_progress)
+        await workflow.execute_activity(
+            my_activity,
+            start_to_close_timeout=timedelta(seconds=10),
+            retry_policy=RetryPolicy(maximum_attempts=1),
+        )
+        return "wf-result"
 
     @workflow.update
-    async def my_update(self) -> NoReturn:
-        await workflow.wait_condition(lambda: False)
+    async def my_update(self) -> str:
+        self.handler_in_progress = True
+        # await workflow.wait_condition(lambda: False)
+        return "update-result"
 
 
 async def main():
@@ -34,6 +52,7 @@ async def main():
         client,
         task_queue=tq,
         workflows=[Workflow],
+        activities=[my_activity],
     ):
         wf_handle = await client.start_workflow(
             Workflow.run,
@@ -47,7 +66,7 @@ async def main():
             Workflow.my_update, wait_for_stage=WorkflowUpdateStage.ACCEPTED
         )
 
-        await wf_handle.cancel()
+        # await wf_handle.cancel()
 
         try:
             print(await upd_handle.result())
