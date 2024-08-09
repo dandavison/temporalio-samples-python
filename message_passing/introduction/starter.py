@@ -1,6 +1,5 @@
 import asyncio
 
-from temporalio import common
 from temporalio.client import Client, WorkflowUpdateStage
 
 from message_passing.introduction.workflow import (
@@ -17,7 +16,6 @@ async def main():
         GreetingWorkflow.run,
         id="greeting-workflow-1234",
         task_queue="message-passing-introduction-task-queue",
-        id_reuse_policy=common.WorkflowIDReusePolicy.TERMINATE_IF_RUNNING,
     )
 
     supported_languages = await wf_handle.query(
