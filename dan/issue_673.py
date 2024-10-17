@@ -5,6 +5,9 @@ from temporalio import activity, workflow
 from temporalio.client import Client
 from temporalio.worker import Replayer, Worker
 
+from dan import utils
+from dan.constants import TASK_QUEUE, WORKFLOW_ID
+
 
 @activity.defn
 async def test_activity() -> None:
@@ -12,7 +15,7 @@ async def test_activity() -> None:
 
 
 @workflow.defn
-class TestWorkflow:
+class Workflow:
     def __init__(self) -> None:
         self.running_count = 0
         self.state = "stopped"
@@ -43,30 +46,33 @@ class TestWorkflow:
             self.state = "stopped"
 
 
-async def main() -> None:
-    id = "wid"
+activities = [test_activity]
+
+
+async def original_main() -> None:
     client = await Client.connect("localhost:7233")
     async with Worker(
         client=client,
-        task_queue="test",
-        workflows=[TestWorkflow],
-        activities=[test_activity],
+        task_queue=TASK_QUEUE,
+        workflows=[Workflow],
+        activities=activities,
     ):
-        workflow_handle = await client.start_workflow(
-            TestWorkflow.run,
-            id=id,
-            task_queue="test",
-        )
-        await workflow_handle.signal(TestWorkflow.start)
-        await asyncio.sleep(0.5)
-        await workflow_handle.execute_update(TestWorkflow.resume)
-        await workflow_handle.result()
+        await starter()
 
-    workflows = client.list_workflows(f"WorkflowId = '{id}'")
+
+async def starter():
+    client = await utils.connect("Client")
+    workflow_handle = await utils.start_workflow(Workflow.run, client=client)
+    await workflow_handle.signal(Workflow.start)
+    await asyncio.sleep(0.5)
+    await workflow_handle.execute_update(Workflow.resume)
+    await workflow_handle.result()
+
+    workflows = client.list_workflows(f"WorkflowId = '{WORKFLOW_ID}'")
     histories = workflows.map_histories()
-    replayer = Replayer(workflows=[TestWorkflow])
+    replayer = Replayer(workflows=[Workflow])
     await replayer.replay_workflows(histories)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(starter())
