@@ -22,7 +22,7 @@ class LockService:
         await Future()
 
     @workflow.update
-    async def acquire_lock(self) -> Lock:
+    async def acquire_lock(self, client_id: str) -> Lock:
         # TODO: implement lock service sample
         token = str(workflow.uuid4())
         return Lock(token)
@@ -73,3 +73,31 @@ class TransactionWorkflow:
             id=workflow.info().workflow_id,
             status="confirmed",
         )
+
+
+#
+# ShoppingCart (lazy init)
+# The workflow is a shopping cart and supports an `add_item` update.
+#
+
+
+@dataclass
+class ShoppingCartItem:
+    sku: str
+    quantity: int
+    price: float
+
+
+@workflow.defn
+class ShoppingCartWorkflow:
+    def __init__(self):
+        self.items: list[ShoppingCartItem] = []
+
+    @workflow.run
+    async def run(self) -> None:
+        await Future()
+
+    @workflow.update
+    async def add_item(self, item: ShoppingCartItem) -> float:
+        self.items.append(item)
+        return sum(item.quantity * item.price for item in self.items)
