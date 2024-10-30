@@ -17,7 +17,11 @@ async def main():
     async with Worker(
         client,
         task_queue=TASK_QUEUE,
-        workflows=[workflows.LockService, workflows.TransactionWorkflow],
+        workflows=[
+            workflows.LockService,
+            workflows.TransactionWorkflow,
+            workflows.ShoppingCartWorkflow,
+        ],
     ):
         logging.info("Worker started, ctrl+c to exit")
         await interrupt_event.wait()

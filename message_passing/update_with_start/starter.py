@@ -6,6 +6,7 @@ from temporalio.client import Client
 from message_passing.update_with_start import TASK_QUEUE
 from message_passing.update_with_start.workflows import (
     LockService,
+    ShoppingCartItem,
     ShoppingCartWorkflow,
     TransactionRequest,
     TransactionWorkflow,
@@ -23,6 +24,7 @@ async def financial_transaction_with_early_return():
         TransactionWorkflow.run,
         args=[TransactionRequest(amount=77.7)],
         id="transaction-abc123",
+        id_conflict_policy=common.WorkflowIDConflictPolicy.FAIL,
         task_queue=TASK_QUEUE,
     )
 
@@ -59,57 +61,30 @@ async def use_a_lock_service():
 async def shopping_cart():
     client = await Client.connect("localhost:7233")
 
-    shopping_cart = client.with_start_workflow(
+    with_start_handle = client.with_start_workflow(
         ShoppingCartWorkflow.run,
         id="shopping-cart-id",
         id_conflict_policy=common.WorkflowIDConflictPolicy.USE_EXISTING,
         task_queue="uws",
     )
-    
 
+    crisps = ShoppingCartItem(sku="sku-123", quantity=1, price=77.7)
+    subtotal_1 = await with_start_handle.execute_update(
+        ShoppingCartWorkflow.add_item, crisps
+    )
 
+    jam = ShoppingCartItem(sku="sku-456", quantity=1, price=77.7)
+    subtotal_2 = await with_start_handle.execute_update(
+        ShoppingCartWorkflow.add_item, jam
+    )
 
+    # Get the real workflow handle that we'll need to send a signal
+    wf_handle = with_start_handle.get_workflow_handle()
+    await wf_handle.signal(ShoppingCartWorkflow.finalize)
+    order = await wf_handle.result()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    new_subtotal = shopping_cart.
+    print(f"subtotals were, {[subtotal_1, subtotal_2]}")
+    print(f"final order: {order}")
 
 
 async def main():

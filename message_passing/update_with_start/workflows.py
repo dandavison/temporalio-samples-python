@@ -88,16 +88,35 @@ class ShoppingCartItem:
     price: float
 
 
+@dataclass
+class FinalizedOrder:
+    id: str
+    items: list[ShoppingCartItem]
+    total: float
+
+
 @workflow.defn
 class ShoppingCartWorkflow:
     def __init__(self):
         self.items: list[ShoppingCartItem] = []
+        self.ready_to_finalize = False
 
     @workflow.run
-    async def run(self) -> None:
-        await Future()
+    async def run(self) -> FinalizedOrder:
+        await workflow.wait_condition(
+            lambda: workflow.all_handlers_finished() and self.ready_to_finalize
+        )
+        return FinalizedOrder(
+            id=workflow.info().workflow_id,
+            items=self.items,
+            total=sum(item.quantity * item.price for item in self.items),
+        )
 
     @workflow.update
     async def add_item(self, item: ShoppingCartItem) -> float:
         self.items.append(item)
         return sum(item.quantity * item.price for item in self.items)
+
+    @workflow.signal
+    def finalize(self):
+        self.ready_to_finalize = True
