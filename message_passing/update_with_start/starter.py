@@ -87,10 +87,28 @@ async def shopping_cart():
     print(f"final order: {order}")
 
 
+async def sad_path_1():
+    client = await Client.connect("localhost:7233")
+
+    with_start_handle = client.with_start_workflow(
+        ShoppingCartWorkflow.run,
+        id="shopping-cart-id",
+        id_conflict_policy=common.WorkflowIDConflictPolicy.USE_EXISTING,
+        task_queue="uws",
+    )
+
+    await with_start_handle.get_workflow_handle().result()
+
+
 async def main():
+    print("💰")
     await financial_transaction_with_early_return()
+    print("🔒")
     await use_a_lock_service()
+    print("🛒")
     await shopping_cart()
+    print("💥")
+    await sad_path_1()
 
 
 if __name__ == "__main__":
