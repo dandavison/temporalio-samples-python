@@ -32,7 +32,8 @@ async def financial_transaction_with_early_return():
     confirmation_token = await transaction.execute_update(
         TransactionWorkflow.get_confirmation
     )
-    final_report = await transaction.get_workflow_handle().result()
+    wf_handle = await transaction.get_workflow_handle()
+    final_report = await wf_handle.result()
 
     print(f"got confirmation token: {confirmation_token}")
     print(f"got final report: {final_report}")
@@ -79,7 +80,7 @@ async def shopping_cart():
     )
 
     # Get the real workflow handle that we'll need to send a signal
-    wf_handle = with_start_handle.get_workflow_handle()
+    wf_handle = await with_start_handle.get_workflow_handle()
     await wf_handle.signal(ShoppingCartWorkflow.finalize)
     order = await wf_handle.result()
 
@@ -97,7 +98,8 @@ async def sad_path_1():
         task_queue="uws",
     )
 
-    await with_start_handle.get_workflow_handle().result()
+    wf_handle = await with_start_handle.get_workflow_handle()
+    await wf_handle.result()
 
 
 async def main():
