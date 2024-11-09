@@ -62,7 +62,7 @@ async def use_a_lock_service():
 async def shopping_cart():
     client = await Client.connect("localhost:7233")
 
-    with_start_handle = client.with_start_workflow(
+    with_start_request = client.with_start_workflow(
         ShoppingCartWorkflow.run,
         id="shopping-cart-id",
         id_conflict_policy=common.WorkflowIDConflictPolicy.USE_EXISTING,
@@ -70,17 +70,17 @@ async def shopping_cart():
     )
 
     crisps = ShoppingCartItem(sku="sku-123", quantity=1, price=77.7)
-    subtotal_1 = await with_start_handle.execute_update(
+    subtotal_1 = await with_start_request.execute_update(
         ShoppingCartWorkflow.add_item, crisps
     )
 
     jam = ShoppingCartItem(sku="sku-456", quantity=1, price=77.7)
-    subtotal_2 = await with_start_handle.execute_update(
+    subtotal_2 = await with_start_request.execute_update(
         ShoppingCartWorkflow.add_item, jam
     )
 
     # Get the real workflow handle that we'll need to send a signal
-    wf_handle = await with_start_handle.get_workflow_handle()
+    wf_handle = await with_start_request.get_workflow_handle()
     await wf_handle.signal(ShoppingCartWorkflow.finalize)
     order = await wf_handle.result()
 
@@ -91,14 +91,14 @@ async def shopping_cart():
 async def sad_path_1():
     client = await Client.connect("localhost:7233")
 
-    with_start_handle = client.with_start_workflow(
+    with_start_request = client.with_start_workflow(
         ShoppingCartWorkflow.run,
         id="shopping-cart-id",
         id_conflict_policy=common.WorkflowIDConflictPolicy.USE_EXISTING,
         task_queue="uws",
     )
 
-    wf_handle = await with_start_handle.get_workflow_handle()
+    wf_handle = await with_start_request.get_workflow_handle()
     await wf_handle.result()
 
 
