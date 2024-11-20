@@ -1,7 +1,7 @@
 import asyncio
 
 from temporalio import common
-from temporalio.client import Client
+from temporalio.client import Client, StartWorkflowOperation
 
 from message_passing.update_with_start import TASK_QUEUE
 from message_passing.update_with_start.workflows import (
@@ -20,7 +20,7 @@ async def financial_transaction_with_early_return():
     # This example is slightly different because they will want the final workflow result, as well
     # as the update result.
 
-    start_op = client.create_start_workflow_operation(
+    start_op = StartWorkflowOperation(
         TransactionWorkflow.run,
         args=[TransactionRequest(amount=77.7)],
         id="transaction-abc123",
@@ -32,7 +32,7 @@ async def financial_transaction_with_early_return():
     confirmation_token = await client.execute_update_with_start(
         TransactionWorkflow.get_confirmation, start_workflow_operation=start_op
     )
-    wf_handle = await start_op.get_workflow_handle()
+    wf_handle = await start_op.workflow_handle()
     final_report = await wf_handle.result()
 
     print(f"got confirmation token: {confirmation_token}")
@@ -43,7 +43,7 @@ async def financial_transaction_with_early_return_2():
     # Same, but using asyncio.gather.
     client = await Client.connect("localhost:7233")
 
-    start_op = client.create_start_workflow_operation(
+    start_op = StartWorkflowOperation(
         TransactionWorkflow.run,
         args=[TransactionRequest(amount=77.7)],
         id="transaction-abc123-2",
@@ -52,7 +52,7 @@ async def financial_transaction_with_early_return_2():
     )
 
     wf_handle, confirmation_token = await asyncio.gather(
-        start_op.get_workflow_handle(),
+        start_op.workflow_handle(),
         client.execute_update_with_start(
             TransactionWorkflow.get_confirmation, start_workflow_operation=start_op
         ),
@@ -71,7 +71,7 @@ async def use_a_lock_service():
     # - No network call here
     # - WithStartWorkflowHandle is a restricted interface that only offers update APIs and a way to
     #   get the real workflow handle.
-    start_op = client.create_start_workflow_operation(
+    start_op = StartWorkflowOperation(
         LockService.run,
         id="lock-service-id",
         id_conflict_policy=common.WorkflowIDConflictPolicy.USE_EXISTING,
@@ -89,7 +89,7 @@ async def shopping_cart():
     client = await Client.connect("localhost:7233")
 
     def create_start_op():
-        return client.create_start_workflow_operation(
+        return StartWorkflowOperation(
             ShoppingCartWorkflow.run,
             id="shopping-cart-id",
             id_conflict_policy=common.WorkflowIDConflictPolicy.USE_EXISTING,
@@ -109,7 +109,7 @@ async def shopping_cart():
     )
 
     # Get the real workflow handle that we'll need to send a signal
-    wf_handle = await start_op_1.get_workflow_handle()
+    wf_handle = await start_op_1.workflow_handle()
     await wf_handle.signal(ShoppingCartWorkflow.finalize)
     order = await wf_handle.result()
 
@@ -120,14 +120,14 @@ async def shopping_cart():
 async def sad_path_1():
     client = await Client.connect("localhost:7233")
 
-    start_op = client.create_start_workflow_operation(
+    start_op = StartWorkflowOperation(
         ShoppingCartWorkflow.run,
         id="shopping-cart-id",
         id_conflict_policy=common.WorkflowIDConflictPolicy.USE_EXISTING,
         task_queue="uws",
     )
 
-    wf_handle = await start_op.get_workflow_handle()
+    wf_handle = await start_op.workflow_handle()
     await wf_handle.result()
 
 
