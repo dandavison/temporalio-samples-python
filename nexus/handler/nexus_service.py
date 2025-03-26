@@ -49,15 +49,19 @@ class EchoOperation:
     ) -> nexusrpc.handler.OperationInfo:
         raise NotImplementedError
 
-    # Nexus operations do not need to implement fetch_result when they are called from
-    # a Workflow. We implement it here to check the design in the non-Temporal context.
     async def fetch_result(
         self, token: str, options: nexusrpc.handler.FetchOperationResultOptions
     ) -> EchoOutput:
         raise NotImplementedError
 
 
-class HelloOperation:
+# Inheriting from the protocol here is optional. Users who do it will get the
+# operation definition itself type-checked in situ against the interface (*).
+# Call-sites using instances of the operation are always type-checked.
+#
+# (*) However, in VSCode/Pyright this is done only in 'strict' type-checking
+# mode.
+class HelloOperation:  # (nexusrpc.handler.Operation[HelloInput, HelloOutput]):
     def __init__(self, service: "MyNexusService"):
         self.service = service
 
@@ -80,8 +84,6 @@ class HelloOperation:
     ) -> nexusrpc.handler.OperationInfo:
         return await temporalio.nexus.handler.fetch_workflow_info(token, options)
 
-    # Nexus operations do not need to implement fetch_result when they are called from
-    # a Workflow. We implement it here to check the design in the non-Temporal context.
     async def fetch_result(
         self, token: str, options: nexusrpc.handler.FetchOperationResultOptions
     ) -> HelloOutput:
@@ -94,9 +96,9 @@ class MyNexusService:
         self.db_client = db_client
 
     @nexusrpc.handler.operation
-    def echo(self) -> EchoOperation:
+    def echo(self) -> nexusrpc.handler.Operation[EchoInput, EchoOutput]:
         return EchoOperation(self)
 
     @nexusrpc.handler.operation
-    def hello(self) -> HelloOperation:
+    def hello(self) -> nexusrpc.handler.Operation[HelloInput, HelloOutput]:
         return HelloOperation(self)
