@@ -35,6 +35,18 @@ class EchoCallerWorkflow(CallerWorkflowBase):
 
 
 @workflow.defn
+class Echo2CallerWorkflow(CallerWorkflowBase):
+    @xray.start_as_current_workflow_method_span()
+    @workflow.run
+    async def run(self, message: str) -> EchoOutput:
+        op_output = await self.nexus_client.execute_operation(
+            MyNexusService.echo2,
+            EchoInput(message),
+        )
+        return op_output
+
+
+@workflow.defn
 class HelloCallerWorkflow(CallerWorkflowBase):
     @xray.start_as_current_workflow_method_span()
     @workflow.run

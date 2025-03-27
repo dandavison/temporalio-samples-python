@@ -27,3 +27,4 @@ class EchoOutput:
 class MyNexusService:
     echo: NexusOperation[EchoInput, EchoOutput]
     hello: NexusOperation[HelloInput, HelloOutput]
+    echo2: NexusOperation[EchoInput, EchoOutput]

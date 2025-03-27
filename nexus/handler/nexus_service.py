@@ -17,6 +17,7 @@ The task queue defaults to the task queue being used by the Nexus worker.
 from __future__ import annotations
 
 import nexusrpc.handler
+import temporalio.common
 import temporalio.nexus.handler
 
 from nexus.handler.dbclient import MyDBClient
@@ -30,7 +31,13 @@ from nexus.service.interface import (
 )
 
 
-class EchoOperation:
+# Inheriting from the protocol here is optional. Users who do it will get the
+# operation definition itself type-checked in situ against the interface (*).
+# Call-sites using instances of the operation are always type-checked.
+#
+# (*) However, in VSCode/Pyright this is done only when type-checking is set to
+# 'strict'.
+class EchoOperation(nexusrpc.handler.Operation[EchoInput, EchoOutput]):
     def __init__(self, service: MyNexusService):
         self.service = service
 
@@ -59,8 +66,8 @@ class EchoOperation:
 # operation definition itself type-checked in situ against the interface (*).
 # Call-sites using instances of the operation are always type-checked.
 #
-# (*) However, in VSCode/Pyright this is done only in 'strict' type-checking
-# mode.
+# (*) However, in VSCode/Pyright this is done only when type-checking is set to
+# 'strict'.
 class HelloOperation:  # (nexusrpc.handler.Operation[HelloInput, HelloOutput]):
     def __init__(self, service: "MyNexusService"):
         self.service = service
@@ -93,12 +100,27 @@ class HelloOperation:  # (nexusrpc.handler.Operation[HelloInput, HelloOutput]):
 @nexusrpc.handler.service(interface=interface.MyNexusService)
 class MyNexusService:
     def __init__(self, db_client: MyDBClient):
+        # An example of something that might be held by the service instance.
         self.db_client = db_client
 
+    # A sync operation defined by explicitly implementing the Operation interface
     @nexusrpc.handler.operation
     def echo(self) -> nexusrpc.handler.Operation[EchoInput, EchoOutput]:
         return EchoOperation(self)
 
+    # An async operation defined by explicitly implementing the Operation interface
     @nexusrpc.handler.operation
     def hello(self) -> nexusrpc.handler.Operation[HelloInput, HelloOutput]:
         return HelloOperation(self)
+
+    # A convenience shorthand for defining a sync operation by providing the
+    # start method only.
+    #
+    # A start method defined in this way has access to the service instance, but
+    # not to the operation instance (users who need the latter should implement
+    # the Operation interface directly).
+    @nexusrpc.handler.sync_operation
+    async def echo2(
+        self, input: EchoInput, _: nexusrpc.handler.StartOperationOptions
+    ) -> EchoOutput:
+        return EchoOutput(message=f"Echo {input.message} [via shorthand]!")
