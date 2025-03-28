@@ -60,3 +60,16 @@ class HelloCallerWorkflow(CallerWorkflowBase):
         )
         op_output = await handle
         return op_output
+
+
+@workflow.defn
+class Hello2CallerWorkflow(CallerWorkflowBase):
+    @xray.start_as_current_workflow_method_span()
+    @workflow.run
+    async def run(self, name: str) -> HelloOutput:
+        handle = await self.nexus_client.start_operation(
+            MyNexusService.hello2,
+            HelloInput(name),
+        )
+        op_output = await handle
+        return op_output

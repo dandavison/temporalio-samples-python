@@ -103,24 +103,56 @@ class MyNexusService:
         # An example of something that might be held by the service instance.
         self.db_client = db_client
 
-    # A sync operation defined by explicitly implementing the Operation interface
+    # --------------------------------------------------------------------------
+    # Operations defined by explicitly implementing the Operation interface.
+    #
+
     @nexusrpc.handler.operation
     def echo(self) -> nexusrpc.handler.Operation[EchoInput, EchoOutput]:
         return EchoOperation(self)
 
-    # An async operation defined by explicitly implementing the Operation interface
     @nexusrpc.handler.operation
     def hello(self) -> nexusrpc.handler.Operation[HelloInput, HelloOutput]:
         return HelloOperation(self)
 
-    # A convenience shorthand for defining a sync operation by providing the
-    # start method only.
+    # --------------------------------------------------------------------------
+    # Operations defined by providing the start method only, using the
+    # "shorthand" decorators.
     #
-    # A start method defined in this way has access to the service instance, but
-    # not to the operation instance (users who need the latter should implement
-    # the Operation interface directly).
+    # Note that a start method defined this way has access to the service
+    # instance, but not to the operation instance (users who need the latter
+    # should implement the Operation interface directly).
+
     @nexusrpc.handler.sync_operation
     async def echo2(
         self, input: EchoInput, _: nexusrpc.handler.StartOperationOptions
     ) -> EchoOutput:
         return EchoOutput(message=f"Echo {input.message} [via shorthand]!")
+
+    # --------------------------------------------------------------------------
+    # Operations defined by providing the start method only, using the
+    # "shorthand" decorators.
+    #
+    # Note that a start method defined this way has access to the service
+    # instance, but not to the operation instance (users who need the latter
+    # should implement the Operation interface directly).
+
+    @temporalio.nexus.handler.workflow_operation
+    async def hello2(
+        self, input: HelloInput, options: nexusrpc.handler.StartOperationOptions
+    ) -> temporalio.nexus.handler.AsyncWorkflowOperationResult[HelloOutput]:
+        self.db_client.execute("<some query>")
+        workflow_id = "default-workflow-id"
+        input.name += " [via shorthand]"
+        return await temporalio.nexus.handler.start_workflow(
+            HelloWorkflow.run, input, workflow_id, options
+        )
+
+
+if __name__ == "__main__":
+    # Check run-time type annotations resulting from the decorators.
+    service = MyNexusService(MyDBClient())
+    print("echo:", temporalio.common._type_hints_from_func(service.echo2().start))
+    print(
+        "hello:", temporalio.common._type_hints_from_func(service.hello2().fetch_result)
+    )

@@ -7,6 +7,7 @@ from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 from nexus.caller.workflows import (
     Echo2CallerWorkflow,
     EchoCallerWorkflow,
+    Hello2CallerWorkflow,
     HelloCallerWorkflow,
 )
 
@@ -73,6 +74,26 @@ async def execute_echo2_caller_workflow():
         print("🟢 workflow result:", result)
 
 
+async def execute_hello2_caller_workflow():
+    client = await Client.connect("localhost:7233", namespace="my-caller-namespace")
+    task_queue = "my-caller-task-queue"
+
+    async with Worker(
+        client,
+        task_queue=task_queue,
+        workflows=[Hello2CallerWorkflow],
+        workflow_runner=UnsandboxedWorkflowRunner(),
+    ):
+        print("🟠 Caller worker started")
+        result = await client.execute_workflow(
+            Hello2CallerWorkflow.run,
+            "world",
+            id="my-caller-workflow-id",
+            task_queue=task_queue,
+        )
+        print("🟢 workflow result:", result)
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python -m nexus.caller.app [echo|hello]")
@@ -83,6 +104,7 @@ if __name__ == "__main__":
         "echo": execute_echo_caller_workflow,
         "hello": execute_hello_caller_workflow,
         "echo2": execute_echo2_caller_workflow,
+        "hello2": execute_hello2_caller_workflow,
     }[wf_name]
 
     loop = asyncio.new_event_loop()
