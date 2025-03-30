@@ -26,6 +26,7 @@ class EchoOutput:
 @nexus_service
 class MyNexusService:
     echo: NexusOperation[EchoInput, EchoOutput]
-    hello: NexusOperation[HelloInput, HelloOutput]
     echo2: NexusOperation[EchoInput, EchoOutput]
+    echo3: NexusOperation[EchoInput, EchoOutput]
+    hello: NexusOperation[HelloInput, HelloOutput]
     hello2: NexusOperation[HelloInput, HelloOutput]

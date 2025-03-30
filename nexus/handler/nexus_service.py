@@ -97,6 +97,13 @@ class HelloOperation:  # (nexusrpc.handler.Operation[HelloInput, HelloOutput]):
         return await temporalio.nexus.handler.fetch_workflow_result(token, options)
 
 
+class EchoOperation3(nexusrpc.handler.AbstractOperation[EchoInput, EchoOutput]):
+    async def start(
+        self, input: EchoInput, options: nexusrpc.handler.StartOperationOptions
+    ) -> EchoOutput:
+        return EchoOutput(message=f"Echo {input.message}! [from base class variant]")
+
+
 @nexusrpc.handler.service(interface=interface.MyNexusService)
 class MyNexusService:
     def __init__(self, db_client: MyDBClient):
@@ -114,6 +121,10 @@ class MyNexusService:
     @nexusrpc.handler.operation
     def hello(self) -> nexusrpc.handler.Operation[HelloInput, HelloOutput]:
         return HelloOperation(self)
+
+    @nexusrpc.handler.operation
+    def echo3(self) -> nexusrpc.handler.Operation[EchoInput, EchoOutput]:
+        return EchoOperation3()
 
     # --------------------------------------------------------------------------
     # Operations defined by providing the start method only, using the
