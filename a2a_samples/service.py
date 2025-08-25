@@ -1,3 +1,9 @@
+from a2a.types import (
+    DataPart,
+    Message,
+    Part,
+    Role,
+)
 from nexusrpc import Operation, service
 from nexusrpc.handler import StartOperationContext, service_handler, sync_operation
 from pydantic import BaseModel
@@ -11,20 +17,20 @@ class MyInput(BaseModel):
     name: str
 
 
-class MyOutput(BaseModel):
-    message: str
-
-
 @service(name="test-service")
 class TestService:
-    greet: Operation[MyInput, MyOutput]
+    greet: Operation[MyInput, Message]
 
 
 @service_handler(service=TestService)
 class TestServiceHandler:
     @sync_operation
-    async def greet(self, ctx: StartOperationContext, input: MyInput) -> MyOutput:
+    async def greet(self, ctx: StartOperationContext, input: MyInput) -> Message:
         """
         This is a test operation.
         """
-        return MyOutput(message=f"Hello, {input.name}")
+        return Message(
+            message_id="TODO",
+            parts=[Part(root=DataPart(data={"message": f"Hello, {input.name}"}))],
+            role=Role.agent,
+        )

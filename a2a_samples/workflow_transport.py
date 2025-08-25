@@ -9,8 +9,6 @@ from a2a.types import (
     GetTaskPushNotificationConfigParams,
     Message,
     MessageSendParams,
-    Part,
-    Role,
     Task,
     TaskArtifactUpdateEvent,
     TaskIdParams,
@@ -65,12 +63,7 @@ class WorkflowNexusTransport(ClientTransport):
                 ),
             )
         else:
-            result = await nexus_op
-            return Message(
-                message_id="TODO",
-                parts=[Part(root=DataPart(data=result))],
-                role=Role.agent,
-            )
+            return await nexus_op
 
     async def send_message_streaming(
         self,
