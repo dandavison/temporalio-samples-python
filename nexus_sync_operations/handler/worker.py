@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 from temporalio.client import Client
+from temporalio.common import WorkflowIDConflictPolicy
 from temporalio.worker import Worker
 
 from message_passing.introduction.activities import call_greeting_service
@@ -22,18 +23,29 @@ async def main(client: Optional[Client] = None):
         "localhost:7233",
         namespace=NAMESPACE,
     )
-    greeting_service_handler = await GreetingServiceHandler.create(client, TASK_QUEUE)
 
     async with Worker(
         client,
         task_queue=TASK_QUEUE,
         workflows=[GreetingWorkflow],
         activities=[call_greeting_service],
-        nexus_service_handlers=[greeting_service_handler],
     ):
-        logging.info("Worker started, ctrl+c to exit")
-        await interrupt_event.wait()
-        logging.info("Shutting down")
+        long_running_workflow_handle = await client.start_workflow(
+            GreetingWorkflow.run,
+            id="nexus-sync-operations-greeting-workflow",
+            task_queue=TASK_QUEUE,
+            id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
+        )
+        async with Worker(
+            client,
+            task_queue=TASK_QUEUE,
+            nexus_service_handlers=[
+                GreetingServiceHandler(long_running_workflow_handle)
+            ],
+        ):
+            logging.info("Worker started, ctrl+c to exit")
+            await interrupt_event.wait()
+            logging.info("Shutting down")
 
 
 if __name__ == "__main__":

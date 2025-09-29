@@ -1,7 +1,6 @@
 """
-This file demonstrates how to implement a Nexus service that is backed by a long-running
-workflow and exposes operations that perform signals, updates, and queries against that
-workflow.
+This file demonstrates how to implement a Nexus service that is backed by a long-running workflow
+and exposes operations that perform updates, and queries against that workflow.
 """
 
 from __future__ import annotations
@@ -31,19 +30,16 @@ class GreetingServiceHandler:
     async def create(cls, client: Client, task_queue: str) -> GreetingServiceHandler:
         # Obtain a workflow handle to the long-running workflow that backs this service, starting
         # the workflow if it is not already running.
-        return cls(await cls._get_workflow_handle(client, task_queue))
-
-    @staticmethod
-    async def _get_workflow_handle(
-        client: Client, task_queue: str
-    ) -> WorkflowHandle[GreetingWorkflow, str]:
-        return await client.start_workflow(
+        wf_handle = await client.start_workflow(
             GreetingWorkflow.run,
             id="nexus-sync-operations-greeting-workflow",
             task_queue=task_queue,
             id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
         )
+        return cls(wf_handle)
 
+    # 👉 This is a handler for a nexus operation whose internal implementation involves executing a
+    # query against a long-running workflow that is private to the nexus service.
     @nexusrpc.handler.sync_operation
     async def get_languages(
         self, ctx: nexusrpc.handler.StartOperationContext, input: GetLanguagesInput
@@ -52,12 +48,16 @@ class GreetingServiceHandler:
             GreetingWorkflow.get_languages, input
         )
 
+    # 👉 This is a handler for a nexus operation whose internal implementation involves executing a
+    # query against a long-running workflow that is private to the nexus service.
     @nexusrpc.handler.sync_operation
     async def get_language(
         self, ctx: nexusrpc.handler.StartOperationContext, input: None
     ) -> Language:
         return await self.greeting_workflow_handle.query(GreetingWorkflow.get_language)
 
+    # 👉 This is a handler for a nexus operation whose internal implementation involves executing an
+    # update against a long-running workflow that is private to the nexus service.
     @nexusrpc.handler.sync_operation
     async def set_language(
         self,

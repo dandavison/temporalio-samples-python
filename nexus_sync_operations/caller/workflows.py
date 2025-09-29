@@ -1,3 +1,8 @@
+"""
+This is a workflow that calls nexus operations. The caller does not have information about how these
+operations are implemented by the nexus service.
+"""
+
 from temporalio import workflow
 
 from message_passing.introduction import Language
