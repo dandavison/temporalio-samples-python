@@ -45,8 +45,21 @@ async def main(client: Optional[Client] = None):
     print(f"language changed: {previous_language.name} -> {Language.ARABIC.name}")
 
     # 👉 Send a Signal
-    await wf_handle.signal(GreetingWorkflow.approve, ApproveInput(name=""))
-    print(await wf_handle.result())
+    await wf_handle.signal(GreetingWorkflow.approve, ApproveInput(name="Alice"))
+
+    # 👉 Execute an Update to fetch the greeting translation
+    greeting = await wf_handle.execute_update(
+        GreetingWorkflow.fetch_greeting_translation
+    )
+    print(f"Greeting received: {greeting}")
+
+    # Get the operation log
+    operation_log = await wf_handle.query(GreetingWorkflow.get_operation_log)
+    print(f"Operation log: {operation_log}")
+
+    # Cancel the workflow since it's a never-ending entity workflow
+    await wf_handle.cancel()
+    print("Workflow cancelled")
 
 
 if __name__ == "__main__":

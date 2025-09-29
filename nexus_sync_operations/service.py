@@ -8,9 +8,9 @@ that.
 """
 
 import nexusrpc
-
 from message_passing.introduction import Language
 from message_passing.introduction.workflows import (
+    ApproveInput,
     GetLanguagesInput,
     SetLanguageInput,
 )
@@ -21,3 +21,6 @@ class GreetingService:
     get_languages: nexusrpc.Operation[GetLanguagesInput, list[Language]]
     get_language: nexusrpc.Operation[None, Language]
     set_language: nexusrpc.Operation[SetLanguageInput, Language]
+    approve: nexusrpc.Operation[ApproveInput, None]
+    fetch_greeting_translation: nexusrpc.Operation[None, str]
+    get_operation_log: nexusrpc.Operation[None, list[str]]

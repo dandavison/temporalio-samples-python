@@ -29,18 +29,14 @@ class ApproveInput:
 @workflow.defn
 class GreetingWorkflow:
     """
-    A workflow that that returns a greeting in one of multiple supported
+    A never-ending entity workflow that manages greeting translations in multiple
     languages.
 
-    It exposes a query to obtain the current language, a signal to approve the
-    workflow so that it is allowed to return its result, and two updates for
-    changing the current language and receiving the previous language in
-    response.
+    It exposes queries, signals, and updates to interact with the workflow state.
+    The workflow maintains a log of all operations performed on it.
 
-    One of the update handlers is not an `async def`, so it can only mutate and
-    return local workflow state; the other update handler is `async def` and
-    executes an activity which calls a remote service, giving access to language
-    translations which are not available in local workflow state.
+    This is a true entity workflow that runs indefinitely, processing operations
+    as they come in rather than completing after a single approval.
     """
 
     def __init__(self) -> None:
@@ -52,17 +48,23 @@ class GreetingWorkflow:
         }
         self.language = Language.ENGLISH
         self.lock = asyncio.Lock()  # used by the async handler below
+        self.operation_log: List[str] = []  # Log of operations performed
 
     @workflow.run
-    async def run(self) -> str:
-        # 👉 In addition to waiting for the `approve` Signal, we also wait for
-        # all handlers to finish. Otherwise, the Workflow might return its
-        # result while an async set_language_using_activity Update is in
-        # progress.
-        await workflow.wait_condition(
-            lambda: self.approved_for_release and workflow.all_handlers_finished()
-        )
-        return self.greetings[self.language]
+    async def run(self) -> List[str]:
+        # This is a never-ending entity workflow that runs indefinitely
+        # It will only return the log if explicitly requested (e.g., via cancellation)
+        self.operation_log.append("Workflow started")
+        try:
+            # Run forever, processing operations as they come
+            await workflow.wait_condition(lambda: False)
+        except asyncio.CancelledError:
+            # Return the log when the workflow is cancelled
+            self.operation_log.append("Workflow cancelled")
+            return self.operation_log
+
+        # This should never be reached in normal operation
+        return self.operation_log
 
     @workflow.query
     def get_languages(self, input: GetLanguagesInput) -> List[Language]:
@@ -72,16 +74,27 @@ class GreetingWorkflow:
         else:
             return sorted(self.greetings)
 
+    @workflow.query
+    def get_operation_log(self) -> List[str]:
+        """Get the log of operations performed on this workflow."""
+        return self.operation_log.copy()
+
     @workflow.signal
     def approve(self, input: ApproveInput) -> None:
         # 👉 A Signal handler mutates the Workflow state but cannot return a value.
         self.approved_for_release = True
         self.approver_name = input.name
+        self.operation_log.append(
+            f"Approved by {input.name if input.name else 'anonymous'}"
+        )
 
     @workflow.update
     def set_language(self, input: SetLanguageInput) -> Language:
         # 👉 An Update handler can mutate the Workflow state and return a value.
         previous_language, self.language = self.language, input.language
+        self.operation_log.append(
+            f"Language changed from {previous_language.name} to {input.language.name}"
+        )
         return previous_language
 
     @set_language.validator
@@ -117,7 +130,33 @@ class GreetingWorkflow:
                     )
                 self.greetings[input.language] = greeting
         previous_language, self.language = self.language, input.language
+        self.operation_log.append(
+            f"Language changed from {previous_language.name} to {input.language.name} (using activity)"
+        )
         return previous_language
+
+    @workflow.update
+    async def fetch_greeting_translation(self) -> str:
+        """
+        Fetch the current greeting translation.
+        This waits for approval, returns the greeting, then resets approval.
+        """
+        # Wait for approval
+        await workflow.wait_condition(lambda: self.approved_for_release)
+
+        # Get the greeting
+        greeting = self.greetings[self.language]
+
+        # Log the operation
+        self.operation_log.append(
+            f"Fetched greeting '{greeting}' in {self.language.name} for {self.approver_name or 'anonymous'}"
+        )
+
+        # Reset approval state for next time
+        self.approved_for_release = False
+        self.approver_name = None
+
+        return greeting
 
     @workflow.query
     def get_language(self) -> Language:

@@ -6,15 +6,16 @@ and exposes operations that perform updates, and queries against that workflow.
 from __future__ import annotations
 
 import nexusrpc
-from temporalio.client import Client, WorkflowHandle
-from temporalio.common import WorkflowIDConflictPolicy
-
 from message_passing.introduction import Language
 from message_passing.introduction.workflows import (
+    ApproveInput,
     GetLanguagesInput,
     GreetingWorkflow,
     SetLanguageInput,
 )
+from temporalio.client import Client, WorkflowHandle
+from temporalio.common import WorkflowIDConflictPolicy
+
 from nexus_sync_operations.service import GreetingService
 
 
@@ -66,4 +67,26 @@ class GreetingServiceHandler:
     ) -> Language:
         return await self.greeting_workflow_handle.execute_update(
             GreetingWorkflow.set_language_using_activity, input
+        )
+
+    @nexusrpc.handler.sync_operation
+    async def approve(
+        self, ctx: nexusrpc.handler.StartOperationContext, input: ApproveInput
+    ) -> None:
+        await self.greeting_workflow_handle.signal(GreetingWorkflow.approve, input)
+
+    @nexusrpc.handler.sync_operation
+    async def fetch_greeting_translation(
+        self, ctx: nexusrpc.handler.StartOperationContext, input: None
+    ) -> str:
+        return await self.greeting_workflow_handle.execute_update(
+            GreetingWorkflow.fetch_greeting_translation
+        )
+
+    @nexusrpc.handler.sync_operation
+    async def get_operation_log(
+        self, ctx: nexusrpc.handler.StartOperationContext, input: None
+    ) -> list[str]:
+        return await self.greeting_workflow_handle.query(
+            GreetingWorkflow.get_operation_log
         )
