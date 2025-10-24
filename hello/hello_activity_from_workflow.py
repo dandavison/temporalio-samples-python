@@ -33,14 +33,12 @@ async def my_client_code(client: Client):
 
 
 async def main():
-    client = await Client.connect("localhost:12345")
+    client = await Client.connect("localhost:7233")
     async with Worker(
         client,
         task_queue="tq",
         workflows=[MyWorkflow],
         activities=[my_activity],
-        max_concurrent_activity_task_polls=2,
-        max_concurrent_workflow_task_polls=2,
     ):
         await my_client_code(client)
 
