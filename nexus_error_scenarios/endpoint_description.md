@@ -1,2 +1,3 @@
 ## Service: ErrorScenarioNexusService
- - operation: `error_scenario_operation`
+ - operation: `workflow_run_operation`
+ - operation: `sync_operation`

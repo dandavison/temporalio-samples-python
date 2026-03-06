@@ -15,4 +15,6 @@ class ErrorScenarioWorkflow:
                 type="InvalidInput",
                 non_retryable=True,
             )
+        if input.scenario == "application-error-default":
+            raise ApplicationError("handler workflow failed")
         return ErrorScenarioOutput(message=f"Completed scenario: {input.scenario}")

@@ -7,9 +7,35 @@ from temporalio.envconfig import ClientConfig
 from temporalio.worker import Worker
 
 from nexus_error_scenarios.caller.workflows import CallerWorkflow
+from nexus_error_scenarios.service import SCENARIOS
 
 NAMESPACE = "nexus-error-scenarios-caller-namespace"
 TASK_QUEUE = "nexus-error-scenarios-caller-task-queue"
+
+SCENARIO_DESCRIPTIONS = {
+    "application-error": (
+        "Handler workflow raises ApplicationError("
+        '"intentional failure from handler workflow", '
+        'type="InvalidInput", non_retryable=True)'
+    ),
+    "application-error-default": (
+        "Handler workflow raises ApplicationError("
+        '"handler workflow failed") with default settings'
+    ),
+    "handler-error": (
+        "workflow_run_operation handler raises HandlerError("
+        '"handler rejected the request", type=BAD_REQUEST) '
+        "before starting the workflow"
+    ),
+    "sync-handler-error": (
+        "sync_operation handler raises HandlerError("
+        '"sync operation not found error", type=NOT_FOUND)'
+    ),
+    "sync-operation-error": (
+        "sync_operation handler raises OperationError("
+        '"sync operation failed", state=FAILED)'
+    ),
+}
 
 
 async def execute_caller_workflow(
@@ -38,7 +64,10 @@ async def execute_caller_workflow(
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     try:
-        result = loop.run_until_complete(execute_caller_workflow())
-        print(result)
+        for scenario in SCENARIOS:
+            print(f"\n--- Scenario: {scenario} ---")
+            print(f"  Handler: {SCENARIO_DESCRIPTIONS[scenario]}")
+            result = loop.run_until_complete(execute_caller_workflow(scenario=scenario))
+            print(f"  Caller:  {result}")
     except KeyboardInterrupt:
         loop.run_until_complete(loop.shutdown_asyncgens())
