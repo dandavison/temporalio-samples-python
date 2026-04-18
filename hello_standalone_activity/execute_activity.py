@@ -4,7 +4,7 @@ from datetime import timedelta
 from temporalio.client import Client
 from temporalio.envconfig import ClientConfig
 
-from hello_standalone_activity.my_activity import ComposeGreetingInput, compose_greeting
+from hello_standalone_activity.my_activity import MyJobInput, my_job_handler
 
 
 async def my_application():
@@ -13,10 +13,10 @@ async def my_application():
     client = await Client.connect(**connect_config)
 
     activity_result = await client.execute_activity(
-        compose_greeting,
-        args=[ComposeGreetingInput("Hello", "World")],
+        my_job_handler,
+        args=[MyJobInput("Hello", "World")],
         id="my-standalone-activity-id",
-        task_queue="my-standalone-activity-task-queue",
+        task_queue="my-task-queue",
         start_to_close_timeout=timedelta(seconds=10),
     )
     print(f"Activity result: {activity_result}")

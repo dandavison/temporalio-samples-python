@@ -4,12 +4,20 @@ from temporalio import activity
 
 
 @dataclass
-class ComposeGreetingInput:
-    greeting: str
-    name: str
+class MyJobInput:
+    field_1: str
 
 
 @activity.defn
-def compose_greeting(input: ComposeGreetingInput) -> str:
-    activity.logger.info("Running activity with parameter %s" % input)
-    return f"{input.greeting}, {input.name}!"
+def my_job_handler(input: MyJobInput) -> str:
+    return input.field_1
+
+
+@activity.defn
+def my_activity_1(input: MyJobInput) -> str:
+    return input.field_1
+
+
+@activity.defn
+def my_activity_2(input: MyJobInput) -> str:
+    return input.field_1

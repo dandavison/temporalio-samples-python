@@ -41,7 +41,7 @@ Or use the Temporal CLI:
 temporal activity execute \
   --type compose_greeting \
   --activity-id my-standalone-activity-id \
-  --task-queue my-standalone-activity-task-queue \
+  --task-queue my-task-queue \
   --start-to-close-timeout 10s \
   --input '{"greeting": "Hello", "name": "World"}'
 ```
@@ -60,7 +60,7 @@ Or use the Temporal CLI:
 temporal activity start \
   --type compose_greeting \
   --activity-id my-standalone-activity-id \
-  --task-queue my-standalone-activity-task-queue \
+  --task-queue my-task-queue \
   --start-to-close-timeout 10s \
   --input '{"greeting": "Hello", "name": "World"}'
 ```
@@ -74,7 +74,7 @@ uv run hello_standalone_activity/list_activities.py
 Or use the Temporal CLI:
 
 ```bash
-temporal activity list --query "TaskQueue = 'my-standalone-activity-task-queue'"
+temporal activity list --query "TaskQueue = 'my-task-queue'"
 ```
 
 Note: `list` and `count` are only available in the [Standalone Activity prerelease CLI](https://github.com/temporalio/cli/releases/tag/v1.6.2-standalone-activity).
@@ -88,7 +88,7 @@ uv run hello_standalone_activity/count_activities.py
 Or use the Temporal CLI:
 
 ```bash
-temporal activity count --query "TaskQueue = 'my-standalone-activity-task-queue'"
+temporal activity count --query "TaskQueue = 'my-task-queue'"
 ```
 
 ### Temporal Cloud

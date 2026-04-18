@@ -10,7 +10,7 @@ async def my_application():
     client = await Client.connect(**connect_config)
 
     resp = await client.count_activities(
-        query="TaskQueue = 'my-standalone-activity-task-queue'",
+        query="TaskQueue = 'my-task-queue'",
     )
 
     print("Total activities:", resp.count)
