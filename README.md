@@ -48,6 +48,7 @@ Some examples require extra dependencies. See each sample's directory for specif
   * [hello_exception](hello/hello_exception.py) - Execute an activity that raises an error out of the workflow and out
     of the program.
   * [hello_local_activity](hello/hello_local_activity.py) - Execute a local activity from a workflow.
+  * [hello_list_workflows](hello/hello_list_workflows.py) - List workflow executions by task queue.
   * [hello_mtls](hello/hello_mtls.py) - Accept URL, namespace, and certificate info as CLI args and use mTLS for
     connecting to server.
   * [hello_parallel_activity](hello/hello_parallel_activity.py) - Execute multiple activities at once.
