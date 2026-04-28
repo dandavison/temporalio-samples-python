@@ -5,6 +5,7 @@ from temporalio.client import Client
 from temporalio.envconfig import ClientConfig
 from temporalio.worker import Worker
 
+from hello_standalone_activity.activities import cancellable_activity
 from hello_standalone_activity.my_activity import compose_greeting
 
 
@@ -15,7 +16,7 @@ async def main():
     worker = Worker(
         client,
         task_queue="my-standalone-activity-task-queue",
-        activities=[compose_greeting],
+        activities=[compose_greeting, cancellable_activity],
         activity_executor=ThreadPoolExecutor(5),
     )
     print("worker running...", end="", flush=True)
